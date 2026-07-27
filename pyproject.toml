@@ -1,0 +1,29 @@
+[project]
+name = "changewhy"
+version = "0.1.0"
+description = "Genera un changelog real comparando dos versiones: diff de API pública Python, cambios de dependencias, y comandos CLI añadidos/eliminados -- no solo mensajes de commit."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = ["pydantic>=2.6", "packaging>=23.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4", "ruff>=0.6"]
+
+[project.scripts]
+changewhy = "changewhy.cli:main"
+
+[project.entry-points."changewhy.checks"]
+api_diff = "changewhy.checks.api_diff:ApiDiffCheck"
+dependency_diff = "changewhy.checks.dependency_diff:DependencyDiffCheck"
+cli_diff = "changewhy.checks.cli_diff:CliDiffCheck"
+
+[tool.setuptools.packages.find]
+include = ["changewhy*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
