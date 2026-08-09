@@ -44,6 +44,34 @@ def test_pyproject_toml_tambien_se_compara(git_repo):
     assert any("pydantic" in f.title for f in result.findings)
 
 
+def test_recapitalizado_sin_cambio_real_no_genera_ruido(git_repo):
+    # Bug real encontrado 2026-08-09: los nombres se comparaban tal cual, así
+    # que un simple recapitalizado ("requests" -> "Requests", como haría un
+    # linter o un editor manual, sin tocar la versión) se reportaba como
+    # "eliminada + añadida" en vez de "sin cambios" -- ruido puro en el
+    # changelog generado.
+    write(git_repo, "requirements.txt", "requests>=2.31\n")
+    sha_a = commit_all(git_repo, "a")
+    write(git_repo, "requirements.txt", "Requests>=2.31\n")
+    sha_b = commit_all(git_repo, "b")
+
+    result = DependencyDiffCheck().run(git_repo, sha_a, sha_b)
+    assert result.findings == []
+
+
+def test_recapitalizado_junto_con_cambio_de_version_se_detecta(git_repo):
+    # Si el recapitalizado coincide con un cambio de versión real, ese
+    # cambio no debe perderse dentro de un falso "eliminada + añadida".
+    write(git_repo, "requirements.txt", "requests>=2.28\n")
+    sha_a = commit_all(git_repo, "a")
+    write(git_repo, "requirements.txt", "Requests>=2.31\n")
+    sha_b = commit_all(git_repo, "b")
+
+    result = DependencyDiffCheck().run(git_repo, sha_a, sha_b)
+    assert len(result.findings) == 1
+    assert "Versión cambiada" in result.findings[0].title
+
+
 def test_sin_cambios_no_hay_hallazgos(git_repo):
     write(git_repo, "requirements.txt", "click>=8.0\n")
     sha_a = commit_all(git_repo, "a")

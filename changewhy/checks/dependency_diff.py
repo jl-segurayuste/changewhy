@@ -5,9 +5,17 @@ from pathlib import Path
 
 from packaging.requirements import InvalidRequirement, Requirement
 from packaging.specifiers import SpecifierSet
+from packaging.utils import canonicalize_name
 
 from changewhy.gitref import read_file_at_ref
 from changewhy.plugin import CheckResult, Finding
+
+# Nombre canónico (PEP 503) -> (nombre tal como se declaró, especificador).
+# Comparar por el nombre literal haría que un simple recapitalizado entre
+# refs ("requests" -> "Requests", con la misma versión) se reportara como
+# "eliminada + añadida" en vez de ningún cambio real -- o, peor, enmascarase
+# un cambio de versión genuino que ocurriera en el mismo commit.
+_DeclaredDeps = dict[str, tuple[str, SpecifierSet]]
 
 
 def _parse_requirement_line(line: str) -> Requirement | None:
@@ -20,31 +28,31 @@ def _parse_requirement_line(line: str) -> Requirement | None:
         return None
 
 
-def _parse_requirements_txt(text: str) -> dict[str, SpecifierSet]:
-    declared: dict[str, SpecifierSet] = {}
+def _parse_requirements_txt(text: str) -> _DeclaredDeps:
+    declared: _DeclaredDeps = {}
     for line in text.splitlines():
         req = _parse_requirement_line(line)
         if req is not None:
-            declared[req.name] = req.specifier
+            declared[canonicalize_name(req.name)] = (req.name, req.specifier)
     return declared
 
 
-def _parse_pyproject_toml(text: str) -> dict[str, SpecifierSet]:
+def _parse_pyproject_toml(text: str) -> _DeclaredDeps:
     try:
         data = tomllib.loads(text)
     except tomllib.TOMLDecodeError:
         return {}
     project = data.get("project", {})
-    declared: dict[str, SpecifierSet] = {}
+    declared: _DeclaredDeps = {}
     for line in project.get("dependencies", []):
         req = _parse_requirement_line(line)
         if req is not None:
-            declared[req.name] = req.specifier
+            declared[canonicalize_name(req.name)] = (req.name, req.specifier)
     return declared
 
 
-def _declared_deps_at_ref(repo_path: Path, ref: str) -> dict[str, SpecifierSet]:
-    declared: dict[str, SpecifierSet] = {}
+def _declared_deps_at_ref(repo_path: Path, ref: str) -> _DeclaredDeps:
+    declared: _DeclaredDeps = {}
     req_text = read_file_at_ref(repo_path, ref, "requirements.txt")
     if req_text is not None:
         declared.update(_parse_requirements_txt(req_text))
@@ -64,20 +72,24 @@ class DependencyDiffCheck:
         deps_b = _declared_deps_at_ref(repo_path, ref_b)
 
         findings: list[Finding] = []
-        for pkg in sorted(set(deps_b) - set(deps_a)):
+        for key in sorted(set(deps_b) - set(deps_a)):
+            name, specifier = deps_b[key]
             findings.append(
-                Finding(severity="info", title=f"Dependencia añadida: {pkg}{deps_b[pkg]}")
+                Finding(severity="info", title=f"Dependencia añadida: {name}{specifier}")
             )
-        for pkg in sorted(set(deps_a) - set(deps_b)):
+        for key in sorted(set(deps_a) - set(deps_b)):
+            name, specifier = deps_a[key]
             findings.append(
-                Finding(severity="low", title=f"Dependencia eliminada: {pkg}{deps_a[pkg]}")
+                Finding(severity="low", title=f"Dependencia eliminada: {name}{specifier}")
             )
-        for pkg in sorted(set(deps_a) & set(deps_b)):
-            if str(deps_a[pkg]) != str(deps_b[pkg]):
+        for key in sorted(set(deps_a) & set(deps_b)):
+            name_a, specifier_a = deps_a[key]
+            name_b, specifier_b = deps_b[key]
+            if str(specifier_a) != str(specifier_b):
                 findings.append(
                     Finding(
                         severity="low",
-                        title=f"Versión cambiada: {pkg}{deps_a[pkg]} -> {pkg}{deps_b[pkg]}",
+                        title=f"Versión cambiada: {name_a}{specifier_a} -> {name_b}{specifier_b}",
                     )
                 )
 
