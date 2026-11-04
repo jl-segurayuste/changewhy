@@ -6,7 +6,7 @@ from pathlib import Path
 
 def list_files_at_ref(repo_path: Path, ref: str) -> set[str]:
     result = subprocess.run(
-        ["git", "ls-tree", "-r", "--name-only", ref],
+        ["git", "-c", "core.quotePath=false", "ls-tree", "-r", "--name-only", ref],
         cwd=repo_path,
         capture_output=True,
         text=True,
