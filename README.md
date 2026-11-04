@@ -22,6 +22,12 @@ changewhy — /ruta/al/repo (v1.2.0 -> v1.3.0)
 Total: 3 cambio(s).
 ```
 
+## Así se ve
+
+![Salida de changewhy sobre un proyecto de ejemplo](docs/img/demo.svg)
+
+<sub>Ejecución real sobre dos versiones etiquetadas de un proyecto de ejemplo (todos los datos son ficticios).</sub>
+
 ## Por qué existe
 
 Los generadores de changelog habituales resumen mensajes de commit — útil,
