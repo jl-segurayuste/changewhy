@@ -35,6 +35,13 @@ def _cmd_diff(args: argparse.Namespace) -> int:
     else:
         print(report.to_console())
 
+    # Un check que revienta deja el análisis incompleto: antes solo se avisaba y salía 0 (o 1 según
+    # --fail-on), y en un CI pasaba por verde sin haber mirado lo que ese check mira.
+    failed = [r.check_name for r in results if r.error]
+    if failed:
+        print(f"error: no se pudieron ejecutar: {', '.join(failed)} (análisis incompleto)", file=sys.stderr)
+        return 2
+
     if args.fail_on:
         worst = report.worst_severity()
         if worst is not None and _SEVERITY_ORDER[worst] >= _SEVERITY_ORDER[args.fail_on]:

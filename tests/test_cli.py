@@ -59,3 +59,16 @@ def test_check_desconocido_sale_2(git_repo, capsys):
     write(git_repo, "a.py", "x = 1\n")
     sha = commit_all(git_repo)
     assert main(["diff", sha, sha, str(git_repo), "--only", "typo"]) == 2
+
+
+def test_check_que_revienta_sale_2(git_repo, monkeypatch, capsys):
+    from changewhy import cli
+    from changewhy.plugin import CheckResult
+
+    write(git_repo, "a.py", "x = 1\n")
+    sha = commit_all(git_repo)
+    monkeypatch.setattr(cli, "run_checks", lambda *a, **k: [
+        CheckResult(check_name="roto", summary="El check falló", error="Traceback..."),
+    ])
+    assert cli.main(["diff", sha, sha, str(git_repo)]) == 2
+    assert "roto" in capsys.readouterr().err

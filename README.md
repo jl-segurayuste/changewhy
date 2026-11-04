@@ -46,6 +46,7 @@ changewhy diff main HEAD                  # rama vs. HEAD actual
 changewhy diff abc123 def456 ruta/al/repo
 changewhy diff v1.2.0 v1.3.0 --json
 changewhy diff v1.2.0 v1.3.0 --fail-on medium   # código 1 si hay algo "medium" o peor
+                                                  # código 2 si la ref no existe o algún check no se pudo ejecutar
 changewhy list-checks
 ```
 

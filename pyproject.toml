@@ -1,6 +1,6 @@
 [project]
 name = "changewhy"
-version = "0.1.3"
+version = "0.1.4"
 description = "Genera un changelog real comparando dos versiones: diff de API pública Python, cambios de dependencias, y comandos CLI añadidos/eliminados -- no solo mensajes de commit."
 readme = "README.md"
 license = { text = "MIT" }
