@@ -1,6 +1,9 @@
+import ast
+
+import pytest
 from conftest import commit_all, write
 
-from changewhy.checks.api_diff import ApiDiffCheck, extract_signatures
+from changewhy.checks.api_diff import ApiDiffCheck, classify_change, extract_signatures
 
 
 def test_extract_signatures_funcion_top_level():
@@ -81,3 +84,22 @@ def test_sin_cambios_no_hay_hallazgos(git_repo):
 
     result = ApiDiffCheck().run(git_repo, sha_a, sha_a)
     assert result.findings == []
+
+
+def _args(sig: str) -> ast.arguments:
+    return ast.parse(f"def f({sig}): pass").body[0].args
+
+
+@pytest.mark.parametrize("old, new, expected", [
+    ("a, b: dict=None", "a, b: dict | None=None", "annotations"),
+    ("a", "a, b=1", "compatible"),
+    ("a, *, k=1", "a, *, k=1, j=2", "compatible"),
+    ("a, b", "a", "breaking"),
+    ("a, b", "b, a", "breaking"),
+    ("a, b=1", "a, b", "breaking"),
+    ("a", "a, b", "breaking"),
+    ("a, *, k=1", "a, *, k=1, j", "breaking"),
+    ("a, **kw", "a", "breaking"),
+])
+def test_classify_change(old, new, expected):
+    assert classify_change(_args(old), _args(new)) == expected
