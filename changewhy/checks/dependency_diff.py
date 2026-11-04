@@ -48,6 +48,13 @@ def _parse_pyproject_toml(text: str) -> _DeclaredDeps:
         req = _parse_requirement_line(line)
         if req is not None:
             declared[canonicalize_name(req.name)] = (req.name, req.specifier)
+    # Los extras (`pip install pkg[x]`) también los instala quien usa el paquete.
+    for extra, lines in project.get("optional-dependencies", {}).items():
+        for line in lines:
+            req = _parse_requirement_line(line)
+            if req is not None:
+                key = f"{canonicalize_name(req.name)}[{extra}]"
+                declared[key] = (f"{req.name} (extra {extra}) ", req.specifier)
     return declared
 
 

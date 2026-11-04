@@ -77,3 +77,17 @@ def test_sin_cambios_no_hay_hallazgos(git_repo):
     sha_a = commit_all(git_repo, "a")
     result = DependencyDiffCheck().run(git_repo, sha_a, sha_a)
     assert result.findings == []
+
+
+def test_extras_de_pyproject(git_repo):
+    write(git_repo, "pyproject.toml",
+          '[project]\nname = "x"\n[project.optional-dependencies]\ndev = ["pytest>=7"]\n')
+    sha_a = commit_all(git_repo, "a")
+    write(git_repo, "pyproject.toml",
+          '[project]\nname = "x"\n[project.optional-dependencies]\n'
+          'dev = ["pytest>=8"]\npdf = ["pypdf>=4"]\n')
+    sha_b = commit_all(git_repo, "b")
+
+    titles = [f.title for f in DependencyDiffCheck().run(git_repo, sha_a, sha_b).findings]
+    assert "Dependencia añadida: pypdf (extra pdf) >=4" in titles
+    assert "Versión cambiada: pytest (extra dev) >=7 -> pytest (extra dev) >=8" in titles

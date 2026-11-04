@@ -46,3 +46,16 @@ def test_list_checks(capsys):
     assert "api_diff" in out
     assert "dependency_diff" in out
     assert "cli_diff" in out
+
+
+def test_ref_inexistente_sale_2(git_repo, capsys):
+    write(git_repo, "a.py", "x = 1\n")
+    sha = commit_all(git_repo)
+    assert main(["diff", "v9.9.9", sha, str(git_repo)]) == 2
+    assert "v9.9.9" in capsys.readouterr().err
+
+
+def test_check_desconocido_sale_2(git_repo, capsys):
+    write(git_repo, "a.py", "x = 1\n")
+    sha = commit_all(git_repo)
+    assert main(["diff", sha, sha, str(git_repo), "--only", "typo"]) == 2

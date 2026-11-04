@@ -54,7 +54,7 @@ changewhy list-checks
 | Check | Qué detecta |
 |---|---|
 | `api_diff` | Funciones/métodos públicos de Python (sin `_` inicial) añadidos, eliminados o con la firma cambiada, vía AST — no regex |
-| `dependency_diff` | Dependencias añadidas/eliminadas/con versión cambiada en `requirements.txt`/`pyproject.toml` |
+| `dependency_diff` | Dependencias añadidas/eliminadas/con versión cambiada en `requirements.txt`/`pyproject.toml` (incluidos los extras de `optional-dependencies`) |
 | `cli_diff` | Comandos de `[project.scripts]` añadidos, eliminados o redirigidos a otro entry point |
 
 Nunca ejecuta el código de ninguno de los dos refs — solo lee su contenido

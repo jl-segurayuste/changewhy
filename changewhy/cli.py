@@ -4,6 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from changewhy.gitref import is_commit
 from changewhy.plugin import SEVERITIES
 from changewhy.report import build_report, write_json
 from changewhy.runner import discover_checks, run_checks
@@ -15,6 +16,16 @@ def _cmd_diff(args: argparse.Namespace) -> int:
     repo_path = Path(args.path).resolve()
     only = set(args.only) if args.only else None
     skip = set(args.skip) if args.skip else None
+
+    for ref in (args.ref_a, args.ref_b):
+        if not is_commit(repo_path, ref):
+            print(f"error: '{ref}' no es una ref válida en {repo_path}", file=sys.stderr)
+            return 2
+    unknown = ((only or set()) | (skip or set())) - set(discover_checks())
+    if unknown:
+        print(f"error: check(s) desconocido(s): {', '.join(sorted(unknown))} "
+              "(ver `changewhy list-checks`)", file=sys.stderr)
+        return 2
 
     results = run_checks(repo_path, args.ref_a, args.ref_b, only=only, skip=skip)
     report = build_report(repo_path, args.ref_a, args.ref_b, results)
